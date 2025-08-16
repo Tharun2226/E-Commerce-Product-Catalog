@@ -1,0 +1,113 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CartService } from '../../../../core/services/cart.service';
+import { CartItem } from '../../../../core/models/cart-item.model';
+
+@Component({
+  selector: 'app-cart-list',
+  standalone: true,
+  imports: [CommonModule, RouterLink, FormsModule],
+  templateUrl: './cart-list.component.html',
+  styleUrl: './cart-list.component.css'
+})
+export class CartListComponent implements OnInit {
+  cartItems: CartItem[] = [];
+  loading = false;
+
+  constructor(private cartService: CartService) {}
+
+  ngOnInit(): void {
+    this.loadCartItems();
+  }
+
+  loadCartItems(): void {
+    this.loading = true;
+    this.cartService.getCartItems().subscribe({
+      next: (items) => {
+        console.log('Cart items received:', items);
+        this.cartItems = items;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading cart items:', error);
+        this.cartItems = [];
+        this.loading = false;
+      }
+    });
+  }
+
+  incrementQuantity(cartItemId: number): void {
+    const item = this.cartItems.find(i => i.cartItemId === cartItemId);
+    if (!item) {
+      console.error('Item not found:', cartItemId);
+      return;
+    }
+
+    console.log('Incrementing quantity for item:', item);
+    this.cartService.updateQuantity(cartItemId, item.quantity + 1).subscribe({
+      next: () => {
+        console.log('Successfully incremented quantity');
+        this.loadCartItems();
+      },
+      error: (error) => {
+        console.error('Error incrementing quantity:', error);
+      }
+    });
+  }
+
+  decrementQuantity(cartItemId: number): void {
+    const item = this.cartItems.find(i => i.cartItemId === cartItemId);
+    if (!item) {
+      console.error('Item not found:', cartItemId);
+      return;
+    }
+
+    if (item.quantity <= 1) {
+      this.removeItem(cartItemId);
+      return;
+    }
+
+    console.log('Decrementing quantity for item:', item);
+    this.cartService.updateQuantity(cartItemId, item.quantity - 1).subscribe({
+      next: () => {
+        console.log('Successfully decremented quantity');
+        this.loadCartItems();
+      },
+      error: (error) => {
+        console.error('Error decrementing quantity:', error);
+      }
+    });
+  }
+
+  removeItem(cartItemId: number): void {
+    this.cartService.removeFromCart(cartItemId).subscribe({
+      next: () => {
+        console.log('Successfully removed item');
+        this.loadCartItems();
+      },
+      error: (error) => {
+        console.error('Error removing item:', error);
+      }
+    });
+  }
+
+  clearCart(): void {
+    this.cartService.clearCart().subscribe({
+      next: () => {
+        console.log('Successfully cleared cart');
+        this.loadCartItems();
+      },
+      error: (error) => {
+        console.error('Error clearing cart:', error);
+      }
+    });
+  }
+
+  calculateTotal(): number {
+    return this.cartItems.reduce((total, item) => {
+      return total + ((item.product?.price || 0) * item.quantity);
+    }, 0);
+  }
+}
