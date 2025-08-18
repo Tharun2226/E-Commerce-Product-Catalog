@@ -6,8 +6,7 @@ import { CategoryBrowserComponent } from './components/category-browser/category
 @NgModule({
   imports: [
     CommonModule,
-    CategoriesRoutingModule,
-    CategoryBrowserComponent // Import the standalone component
+    CategoriesRoutingModule
   ]
 })
 export class CategoriesModule { }
